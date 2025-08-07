@@ -40,7 +40,7 @@ class AuthController extends Controller
                 ],
                 function ($message) use ($request) {
                     $message->from('app@justhomesapp.com', 'Xyvra Group');
-                    $message->to($this->$request->email)->subject("Xyvra Group: Email Verification Code");
+                    $message->to($request->email)->subject("Xyvra Group: Email Verification Code");
                 }
             );
         } catch (\Exception $e) {
