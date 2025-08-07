@@ -57,9 +57,6 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-
-
-        //dd("here");
         $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -68,13 +65,18 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            // throw ValidationException::withMessages([
-            //     'email' => ['The provided credentials are incorrect.'],
-            // ]);
             return response()->json([
                 'success' => false,
                 'message' => "Invalid credentials"
             ], 401);
+        }
+
+        // Check if user is active
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => "Your account is inactive. Please contact administrator."
+            ], 403); // 403 Forbidden status code
         }
 
         return response()->json([
