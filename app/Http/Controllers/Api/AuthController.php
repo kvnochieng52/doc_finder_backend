@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -19,12 +21,32 @@ class AuthController extends Controller
 
         ]);
 
+
+        $randomNumber = rand(1000, 9999);
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'verification_code' => mt_rand(100000, 999999),
+            'verification_code' => $randomNumber
         ]);
+
+
+        try {
+            Mail::send(
+                'mailing.signup.verification',
+                [
+                    'resetCode' => $randomNumber,
+                    'name' => $request->name,
+                ],
+                function ($message) use ($request) {
+                    $message->from('app@justhomesapp.com', 'Xyvra Group');
+                    $message->to($this->$request->email)->subject("Xyvra Group: Email Verification Code");
+                }
+            );
+        } catch (\Exception $e) {
+            Log::error("Failed to send email: " . $e->getMessage());
+            $this->fail($e);
+        }
 
         return response()->json([
             'success' => true,
