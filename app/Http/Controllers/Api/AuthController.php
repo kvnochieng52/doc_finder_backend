@@ -45,7 +45,7 @@ class AuthController extends Controller
             );
         } catch (\Exception $e) {
             Log::error("Failed to send email: " . $e->getMessage());
-            $this->fail($e);
+            // $this->fail($e);
         }
 
         return response()->json([
