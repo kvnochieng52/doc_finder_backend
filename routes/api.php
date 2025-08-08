@@ -28,12 +28,6 @@ Route::middleware(['api'])->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
-
-
-
-
-
-
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
