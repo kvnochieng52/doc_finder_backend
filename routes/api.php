@@ -23,6 +23,13 @@ Route::middleware(['api'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/verify-email', [AuthController::class, 'VerifyEmail']);
+    Route::post('/send-reset-code', [AuthController::class, 'sendResetCode']);
+
+
+
+
+
+
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);

@@ -118,4 +118,45 @@ class AuthController extends Controller
             ], 401);
         }
     }
+
+
+
+    public function sendResetCode(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => "User with this email does not exist"
+            ], 401);
+        }
+
+        $randomNumber = rand(1000, 9999);
+        $user->verification_code = $randomNumber;
+        $user->save();
+
+        try {
+            Mail::send(
+                'mailing.signup.verification',
+                [
+                    'resetCode' => $randomNumber,
+                    'name' => $user->name,
+                ],
+                function ($message) use ($user) {
+                    $message->from('app@justhomesapp.com', 'Xyvra Group');
+                    $message->to($user->email)->subject("Xyvra Group: Password Reset Code");
+                }
+            );
+        } catch (\Exception $e) {
+            Log::error("Failed to send email: " . $e->getMessage());
+            // $this->fail($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Password reset code sent successfully"
+        ], 200);
+    }
 }
