@@ -25,6 +25,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('/verify-email', [AuthController::class, 'VerifyEmail']);
     Route::post('/send-reset-code', [AuthController::class, 'sendResetCode']);
     Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
 
