@@ -159,4 +159,21 @@ class AuthController extends Controller
             'message' => "Password reset code sent successfully"
         ], 200);
     }
+
+
+    public function verifyResetCode(Request $request)
+    {
+        $user = User::where('email', $request->email)->first();
+        if ($user->verification_code == $request->verification_code) {
+            return response()->json([
+                'success' => true,
+                'message' => "Password reset code verified successfully"
+            ], 200);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => "Invalid verification code"
+            ], 401);
+        }
+    }
 }
