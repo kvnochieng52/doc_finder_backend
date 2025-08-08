@@ -164,7 +164,8 @@ class AuthController extends Controller
     public function verifyResetCode(Request $request)
     {
         $user = User::where('email', $request->email)->first();
-        if ($user->verification_code == $request->verification_code) {
+
+        if ($user->verification_code == $request->code) {
             return response()->json([
                 'success' => true,
                 'message' => "Password reset code verified successfully"
