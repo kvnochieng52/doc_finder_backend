@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +29,11 @@ Route::middleware(['api'])->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
+
+
+
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
     });
