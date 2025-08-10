@@ -164,4 +164,17 @@ class ProfileController extends Controller
             ], 500);
         }
     }
+
+
+
+    public function userProfile(Request $request)
+    {
+        $user = auth()->user();
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user' => $user
+            ]
+        ], 200);
+    }
 }
