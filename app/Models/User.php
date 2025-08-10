@@ -29,7 +29,8 @@ class User extends Authenticatable
         'dob',
         'account_type',
         'profile_image',
-        'is_active'
+        'is_active',
+        'verification_code'
     ];
 
     /**
