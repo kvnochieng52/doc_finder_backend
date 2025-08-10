@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Specialization;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -173,7 +174,8 @@ class ProfileController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => $user
+                'user' => $user,
+                // 'specialities' => Specialization::where
             ]
         ], 200);
     }
