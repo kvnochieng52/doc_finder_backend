@@ -26,6 +26,10 @@ return new class extends Migration
             $table->string('id_number')->nullable();
             $table->integer('account_type')->nullable(); // 1 for user, 2 for Sp/dcotor
             $table->string('address')->nullable();
+
+
+            $table->text('licence_number')->nullable();
+            $table->text('professional_bio')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

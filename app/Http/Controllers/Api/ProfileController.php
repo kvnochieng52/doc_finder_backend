@@ -175,6 +175,7 @@ class ProfileController extends Controller
             'success' => true,
             'data' => [
                 'user' => $user,
+                'specializations' => Specialization::where('is_active', 1)->get(),
                 // 'specialities' => Specialization::where
             ]
         ], 200);
