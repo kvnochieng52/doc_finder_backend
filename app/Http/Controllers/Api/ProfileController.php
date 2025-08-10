@@ -110,6 +110,7 @@ class ProfileController extends Controller
                 'address' => 'required|string|max:500',
                 'dateOfBirth' => 'required|date',
                 'userType' => 'required|in:user,serviceProvider',
+
             ]);
 
             if ($validator->fails()) {
@@ -132,6 +133,7 @@ class ProfileController extends Controller
                 'address' => $request->address,
                 'dob' => $request->dateOfBirth,
                 'account_type' => $accountType,
+                'first_login' => 0,
             ]);
 
             Log::info('User basic details updated successfully', [

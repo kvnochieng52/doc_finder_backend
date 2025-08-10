@@ -31,7 +31,8 @@ class User extends Authenticatable
         'profile_image',
         'is_active',
         'verification_code',
-        'first_login'
+        'first_login',
+        'sp_approved',
     ];
 
     /**
