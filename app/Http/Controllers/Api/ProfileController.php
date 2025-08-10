@@ -174,16 +174,37 @@ class ProfileController extends Controller
 
     public function userProfile(Request $request)
     {
-        $user = auth()->user();
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user' => $user,
-                'specializations' => Specialization::where('is_active', 1)->get(),
-                'user_specializations' => UserSpecialization::where('user_id', $user->id)->get(),
-                'user_ids' => UserDocuments::where(['user_id' => $user->id, 'document_type' => 'id'])->get(),
-                'user_documents' => UserDocuments::where(['user_id' => $user->id, 'document_type' =>  'certificate'])->get(),
-            ]
-        ], 200);
+        try {
+            $user = auth()->user();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => $user,
+                    'specializations' => Specialization::where('is_active', 1)->get(),
+                    'user_specializations' => UserSpecialization::where('user_id', $user->id)->get(),
+                    'user_ids' => UserDocuments::where([
+                        'user_id' => $user->id,
+                        'document_type' => 'id'
+                    ])->get(),
+                    'user_documents' => UserDocuments::where([
+                        'user_id' => $user->id,
+                        'document_type' => 'certificate'
+                    ])->get(),
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Error in userProfile: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again later.'
+            ], 500);
+        }
     }
 }
