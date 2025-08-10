@@ -9,10 +9,16 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
+
+
+    public function updateUserProfile(Request $request) {}
+
+
     public function uploadProfileImage(Request $request)
     {
         try {
@@ -72,6 +78,89 @@ class ProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => 'Failed to upload profile image'
+            ], 500);
+        }
+    }
+
+
+    public function saveBasicDetails(Request $request)
+    {
+        try {
+            // Get authenticated user
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email,' . $user->id,
+                'telephone' => 'required|string|max:20',
+                'idNumber' => 'required|string|max:50',
+                'address' => 'required|string|max:500',
+                'dateOfBirth' => 'required|date',
+                'userType' => 'required|in:user,serviceProvider',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Map userType to account_type integer
+            $accountType = $request->userType === 'user' ? 1 : 2;
+
+            // Update user details
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'telephone' => $request->telephone,
+                'id_number' => $request->idNumber,
+                'address' => $request->address,
+                'dob' => $request->dateOfBirth,
+                'account_type' => $accountType,
+            ]);
+
+            Log::info('User basic details updated successfully', [
+                'user_id' => $user->id,
+                'updated_fields' => $request->only(['name', 'email', 'telephone', 'idNumber', 'address', 'dateOfBirth', 'userType'])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Basic details saved successfully',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'telephone' => $user->telephone,
+                        'id_number' => $user->id_number,
+                        'address' => $user->address,
+                        'dob' => $user->dob,
+                        'account_type' => $user->account_type,
+                        'profile_image' => $user->profile_image,
+                    ]
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error saving basic details', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save basic details. Please try again.'
             ], 500);
         }
     }

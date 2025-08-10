@@ -34,6 +34,7 @@ Route::middleware(['api'])->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage']);
+        Route::post('/save-basic-details', [ProfileController::class, 'saveBasicDetails']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
     });

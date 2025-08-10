@@ -20,6 +20,11 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('profile_image')->nullable();
+            $table->date('dob')->nullable();
+            $table->string('telephone')->nullable();
+            $table->string('id_number')->nullable();
+            $table->integer('account_type')->nullable(); // 1 for user, 2 for Sp/dcotor
+            $table->string('address')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
