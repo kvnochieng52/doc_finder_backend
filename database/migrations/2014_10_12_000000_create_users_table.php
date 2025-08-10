@@ -31,6 +31,8 @@ return new class extends Migration
             $table->text('licence_number')->nullable();
             $table->text('professional_bio')->nullable();
             $table->integer('sp_approved')->default(0)->nullable();
+            $table->integer('first_login')->default(1)->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

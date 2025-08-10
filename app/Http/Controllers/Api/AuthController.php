@@ -27,7 +27,8 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'verification_code' => $randomNumber
+            'verification_code' => $randomNumber,
+            'first_login' => 1,
         ]);
 
 

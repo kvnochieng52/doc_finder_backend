@@ -30,7 +30,8 @@ class User extends Authenticatable
         'account_type',
         'profile_image',
         'is_active',
-        'verification_code'
+        'verification_code',
+        'first_login'
     ];
 
     /**
