@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Specialization;
 use App\Models\User;
+use App\Models\UserDocuments;
+use App\Models\UserSpecialization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -176,7 +178,9 @@ class ProfileController extends Controller
             'data' => [
                 'user' => $user,
                 'specializations' => Specialization::where('is_active', 1)->get(),
-                // 'specialities' => Specialization::where
+                'user_specializations' => UserSpecialization::where('user_id', $user->id)->get(),
+                'user_ids' => UserDocuments::where('user_id', $user->id, 'document_type', 'id')->get(),
+                'user_documents' => UserDocuments::where('user_id', $user->id, 'document_type',  'certificate')->get(),
             ]
         ], 200);
     }
