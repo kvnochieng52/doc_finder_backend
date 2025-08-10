@@ -100,10 +100,18 @@ class ServiceProviderController extends Controller
             // Rollback the transaction
             DB::rollback();
 
+            // Log the error
+            Log::error('Error while saving service provider details: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => request()->all() // Optional: log the request data for debugging
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while saving service provider details',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage() // Consider hiding in production
             ], 500);
         }
     }
