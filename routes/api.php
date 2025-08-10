@@ -45,7 +45,7 @@ Route::middleware(['api'])->group(function () {
 
         Route::post('/save-service-provider-details', [ServiceProviderController::class, 'saveServiceProviderDetails']);
         Route::post('/upload-user-document', [ServiceProviderController::class, 'uploadUserDocument']);
-        Route::get('/user-profile', [ServiceProviderController::class, 'getUserProfile']);
+        // Route::get('/user-profile', [ServiceProviderController::class, 'getUserProfile']);
         Route::delete('/user-document/{documentId}', [ServiceProviderController::class, 'deleteUserDocument']);
 
 
