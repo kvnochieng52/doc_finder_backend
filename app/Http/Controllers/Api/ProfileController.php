@@ -178,7 +178,7 @@ class ProfileController extends Controller
             'data' => [
                 'user' => $user,
                 'specializations' => Specialization::where('is_active', 1)->get(),
-                'user_specializations' => UserSpecialization::where('is_active', 1)->get(),
+                'user_specializations' => UserSpecialization::where('user_id', $user->id)->get(),
                 'user_ids' => UserDocuments::where('user_id', $user->id, 'document_type', 'id')->get(),
                 'user_documents' => UserDocuments::where('user_id', $user->id, 'document_type',  'certificate')->get(),
             ]
