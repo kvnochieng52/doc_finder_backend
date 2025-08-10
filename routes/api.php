@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\ServiceProviderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,10 @@ Route::middleware(['api'])->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 
+    Route::get('/service-provider/{userId}', [ServiceProviderController::class, 'getServiceProviderProfile']);
+
+
+
 
 
 
@@ -38,6 +43,10 @@ Route::middleware(['api'])->group(function () {
         Route::post('/upload-profile-image', [ProfileController::class, 'uploadProfileImage']);
 
 
+        Route::post('/save-service-provider-details', [ServiceProviderController::class, 'saveServiceProviderDetails']);
+        Route::post('/upload-user-document', [ServiceProviderController::class, 'uploadUserDocument']);
+        Route::get('/user-profile', [ServiceProviderController::class, 'getUserProfile']);
+        Route::delete('/user-document/{documentId}', [ServiceProviderController::class, 'deleteUserDocument']);
 
 
         Route::post('/save-basic-details', [ProfileController::class, 'saveBasicDetails']);
