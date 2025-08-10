@@ -19,10 +19,10 @@ class UserDocuments extends Model
     ];
 
 
-    protected $casts = [
-        'is_active' => 'integer',
-        'user_id' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
-    ];
+    // protected $casts = [
+    //     'is_active' => 'integer',
+    //     'user_id' => 'integer',
+    //     'created_by' => 'integer',
+    //     'updated_by' => 'integer',
+    // ];
 }

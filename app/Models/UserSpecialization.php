@@ -16,10 +16,10 @@ class UserSpecialization extends Model
         'updated_by',
     ];
 
-    protected $casts = [
-        'user_id' => 'integer',
-        'specialization_id' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
-    ];
+    // protected $casts = [
+    //     'user_id' => 'integer',
+    //     'specialization_id' => 'integer',
+    //     'created_by' => 'integer',
+    //     'updated_by' => 'integer',
+    // ];
 }
