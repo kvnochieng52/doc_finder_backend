@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('facilities', function (Blueprint $table) {
             $table->id();
             $table->string('facility_name')->nullable();
-            $table->string('facility_profile')->nullable();
-            $table->string('facility_image')->nullable();
+            $table->text('facility_profile')->nullable();
+            $table->text('facility_cover_image')->nullable();
+            $table->text('facility_logo')->nullable();
             $table->string('facility_phone')->nullable();
             $table->string('facility_email')->nullable();
             $table->text('facility_location')->nullable();

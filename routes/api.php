@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SpecializationController;
 use App\Http\Controllers\ServiceProviderController;
 
 /*
@@ -52,5 +53,19 @@ Route::middleware(['api'])->group(function () {
         Route::post('/save-basic-details', [ProfileController::class, 'saveBasicDetails']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'user']);
+
+
+        Route::post('/save-facility', [FacilityController::class, 'saveFacility']);
+        Route::post('/save-facility-specialties', [FacilityController::class, 'saveFacilitySpecialties']);
+        Route::post('/upload-facility-logo', [FacilityController::class, 'uploadFacilityLogo']);
+        Route::post('/upload-facility-cover-image', [FacilityController::class, 'uploadFacilityCoverImage']);
+        Route::get('/facilities', [FacilityController::class, 'getFacilities']);
+        Route::get('/facilities/{id}', [FacilityController::class, 'getFacility']);
+        Route::put('/facilities/{id}', [FacilityController::class, 'updateFacility']);
+        Route::delete('/facilities/{id}', [FacilityController::class, 'deleteFacility']);
+
+
+        Route::get('/specializations/active-for-facility', [SpecializationController::class, 'getActiveForFacility']);
+        Route::get('/specializations', [SpecializationController::class, 'getSpecializations']);
     });
 });
