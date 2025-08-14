@@ -336,4 +336,183 @@ class FacilityController extends Controller
             ], 500);
         }
     }
+
+
+    public function uploadFacilityLogo(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'facility_id' => 'required|integer|exists:facilities,id',
+                'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $facilityId = $request->input('facility_id');
+
+            // Check if facility belongs to the authenticated user
+            $facility = Facility::where('id', $facilityId)
+                ->where('created_by', $user->id)
+                ->first();
+
+            if (!$facility) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Facility not found or unauthorized'
+                ], 404);
+            }
+
+            // Handle file upload
+            if ($request->hasFile('logo')) {
+                $logoFile = $request->file('logo');
+
+                // Delete old logo if exists
+                if ($facility->facility_logo && Storage::disk('public')->exists($facility->facility_logo)) {
+                    Storage::disk('public')->delete($facility->facility_logo);
+                }
+
+                // Generate unique filename
+                $filename = 'facility_logos/' . time() . '_' . $facilityId . '.' . $logoFile->getClientOriginalExtension();
+
+                // Store the file
+                $logoPath = $logoFile->storeAs('facility_logos', basename($filename), 'public');
+
+                // Update facility record
+                $facility->facility_logo = $logoPath;
+                $facility->updated_by = $user->id;
+                $facility->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Facility logo uploaded successfully',
+                    'data' => [
+                        'facility_id' => $facilityId,
+                        'logo_path' => $logoPath,
+                        'logo_url' => Storage::disk('public')->url($logoPath)
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No logo file provided'
+            ], 400);
+        } catch (\Exception $e) {
+            Log::error('Error uploading facility logo', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->except(['logo']) // Exclude file from logging
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload facility logo. Please try again.'
+            ], 500);
+        }
+    }
+
+    public function uploadFacilityCoverImage(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'facility_id' => 'required|integer|exists:facilities,id',
+                'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // Max 5MB for cover images
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $facilityId = $request->input('facility_id');
+
+            // Check if facility belongs to the authenticated user
+            $facility = Facility::where('id', $facilityId)
+                ->where('created_by', $user->id)
+                ->first();
+
+            if (!$facility) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Facility not found or unauthorized'
+                ], 404);
+            }
+
+            // Handle file upload
+            if ($request->hasFile('cover_image')) {
+                $coverImageFile = $request->file('cover_image');
+
+                // Delete old cover image if exists
+                if ($facility->facility_cover_image && Storage::disk('public')->exists($facility->facility_cover_image)) {
+                    Storage::disk('public')->delete($facility->facility_cover_image);
+                }
+
+                // Generate unique filename
+                $filename = 'facility_cover_images/' . time() . '_' . $facilityId . '.' . $coverImageFile->getClientOriginalExtension();
+
+                // Store the file
+                $coverImagePath = $coverImageFile->storeAs('facility_cover_images', basename($filename), 'public');
+
+                // Update facility record
+                $facility->facility_cover_image = $coverImagePath;
+                $facility->updated_by = $user->id;
+                $facility->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Facility cover image uploaded successfully',
+                    'data' => [
+                        'facility_id' => $facilityId,
+                        'cover_image_path' => $coverImagePath,
+                        'cover_image_url' => Storage::disk('public')->url($coverImagePath)
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No cover image file provided'
+            ], 400);
+        } catch (\Exception $e) {
+            Log::error('Error uploading facility cover image', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->except(['cover_image']) // Exclude file from logging
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload facility cover image. Please try again.'
+            ], 500);
+        }
+    }
 }
