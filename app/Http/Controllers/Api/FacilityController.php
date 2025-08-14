@@ -184,7 +184,7 @@ class FacilityController extends Controller
                 ], 401);
             }
 
-            $query = Facility::with(['specialties.specialization'])
+            $query = Facility::with(['specialties']) // Now this relationship exists
                 ->where('created_by', $user->id)
                 ->where('is_active', 1);
 
