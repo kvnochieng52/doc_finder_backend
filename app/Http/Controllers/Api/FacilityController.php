@@ -230,7 +230,7 @@ class FacilityController extends Controller
                 ], 401);
             }
 
-            $facility = Facility::with(['specialties.specialization'])
+            $facility = Facility::with(['specialties'])
                 ->where('id', $id)
                 ->where('created_by', $user->id)
                 ->first();
