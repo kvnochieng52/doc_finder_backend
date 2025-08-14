@@ -515,4 +515,71 @@ class FacilityController extends Controller
             ], 500);
         }
     }
+
+
+    public function deleteFacility($id)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            $facility = Facility::where('id', $id)
+                ->where('created_by', $user->id)
+                ->first();
+
+            if (!$facility) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Facility not found or unauthorized'
+                ], 404);
+            }
+
+            // Use database transaction to ensure data consistency
+            DB::beginTransaction();
+
+            try {
+                // Delete facility specialties first (foreign key constraint)
+                FacilitySpeciality::where('facility_id', $id)->delete();
+
+                // Delete uploaded images from storage
+                if ($facility->facility_logo && Storage::disk('public')->exists($facility->facility_logo)) {
+                    Storage::disk('public')->delete($facility->facility_logo);
+                }
+
+                if ($facility->facility_cover_image && Storage::disk('public')->exists($facility->facility_cover_image)) {
+                    Storage::disk('public')->delete($facility->facility_cover_image);
+                }
+
+                // Delete the facility
+                $facility->delete();
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Facility deleted successfully'
+                ], 200);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            Log::error('Error deleting facility', [
+                'error' => $e->getMessage(),
+                'facility_id' => $id,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete facility. Please try again.'
+            ], 500);
+        }
+    }
 }
