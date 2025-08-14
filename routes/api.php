@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FacilityController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SpecializationController;
 use App\Http\Controllers\ServiceProviderController;
