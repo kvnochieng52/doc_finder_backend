@@ -31,13 +31,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-
     Route::get('/service-provider/{userId}', [ServiceProviderController::class, 'getServiceProviderProfile']);
-
-
-
-
-
 
     Route::middleware('auth:sanctum')->group(function () {
 
