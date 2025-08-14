@@ -31,22 +31,22 @@ class FacilityController extends Controller
             }
 
             // Validate the request data
-            $validator = Validator::make($request->all(), [
-                'facility_name' => 'required|string|max:255',
-                'facility_profile' => 'required|string',
-                'facility_email' => 'required|email|unique:facilities,facility_email',
-                'facility_phone' => 'required|string|max:20',
-                'facility_location' => 'required|string',
-                'facility_website' => 'nullable|url|max:255',
-            ]);
+            // $validator = Validator::make($request->all(), [
+            //     'facility_name' => 'required|string|max:255',
+            //     'facility_profile' => 'required|string',
+            //     'facility_email' => 'required|email|unique:facilities,facility_email',
+            //     'facility_phone' => 'required|string|max:20',
+            //     'facility_location' => 'required|string',
+            //     'facility_website' => 'nullable|url|max:255',
+            // ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+            // if ($validator->fails()) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Validation failed',
+            //         'errors' => $validator->errors()
+            //     ], 422);
+            // }
 
             // Create a new facility
             $facility = new Facility();
