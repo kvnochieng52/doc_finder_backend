@@ -285,23 +285,23 @@ class FacilityController extends Controller
             }
 
             // Validate the request data
-            $validator = Validator::make($request->all(), [
-                'facility_name' => 'sometimes|required|string|max:255',
-                'facility_profile' => 'sometimes|required|string',
-                'facility_email' => 'sometimes|required|email|unique:facilities,facility_email,' . $id,
-                'facility_phone' => 'sometimes|required|string|max:20',
-                'facility_location' => 'sometimes|required|string',
-                'facility_website' => 'sometimes|nullable|url|max:255',
-                'is_active' => 'sometimes|boolean',
-            ]);
+            // $validator = Validator::make($request->all(), [
+            //     'facility_name' => 'sometimes|required|string|max:255',
+            //     'facility_profile' => 'sometimes|required|string',
+            //     'facility_email' => 'sometimes|required|email|unique:facilities,facility_email,' . $id,
+            //     'facility_phone' => 'sometimes|required|string|max:20',
+            //     'facility_location' => 'sometimes|required|string',
+            //     'facility_website' => 'sometimes|nullable|url|max:255',
+            //     'is_active' => 'sometimes|boolean',
+            // ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
+            // if ($validator->fails()) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Validation failed',
+            //         'errors' => $validator->errors()
+            //     ], 422);
+            // }
 
             // Update facility
             $facility->update(array_merge(
