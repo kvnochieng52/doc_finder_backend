@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FacilityController;
+use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SpecializationController;
 use App\Http\Controllers\ServiceProviderController;
@@ -62,5 +63,26 @@ Route::middleware(['api'])->group(function () {
 
         Route::get('/specializations/active-for-facility', [SpecializationController::class, 'getActiveForFacility']);
         Route::get('/specializations', [SpecializationController::class, 'getSpecializations']);
+
+        Route::get('/group-categories', [GroupController::class, 'getCategories']);
+
+        // Get subcategories by category_id
+        Route::get('/group-subcategories', [GroupController::class, 'getSubCategories']);
+
+        // Create group with categories in one call
+        Route::post('/groups', [GroupController::class, 'createGroup']);
+
+        // Image uploads
+        Route::post('/upload-group-image', [GroupController::class, 'uploadGroupImage']);
+        Route::post('/upload-group-cover-image', [GroupController::class, 'uploadGroupCoverImage']);
+
+        // Get group details
+        Route::get('/groups/{groupId}', [GroupController::class, 'getGroupDetails']);
+
+        // Legacy routes (keeping for backward compatibility)
+        Route::get('/active-categories', [GroupController::class, 'getActiveCategories']);
+        Route::get('/categories/{categoryId}/subcategories', [GroupController::class, 'getCategorySubcategories']);
+        Route::post('/groups/save', [GroupController::class, 'saveGroup']);
+        Route::post('/groups/categories', [GroupController::class, 'saveGroupCategories']);
     });
 });
