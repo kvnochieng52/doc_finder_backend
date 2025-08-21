@@ -475,6 +475,11 @@ class GroupController extends Controller
             $group = Group::find($request->group_id);
 
             if ($group->created_by !== Auth::id()) {
+                Log::warning('Unauthorized group image upload', [
+                    'user_id' => Auth::id(),
+                    'group_id' => $request->group_id
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to modify this group'
@@ -491,16 +496,27 @@ class GroupController extends Controller
 
             $group->update(['group_image' => $imagePath]);
 
+            Log::info('Group image uploaded', [
+                'user_id' => Auth::id(),
+                'group_id' => $request->group_id,
+                'image_path' => $imagePath
+            ]);
+
             return response()->json([
                 'success' => true,
                 'image_path' => $imagePath,
                 'message' => 'Group image uploaded successfully'
             ]);
         } catch (\Exception $e) {
+            Log::error('Group image upload failed', [
+                'user_id' => Auth::id(),
+                'group_id' => $request->group_id ?? null,
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to upload group image',
-                'error' => $e->getMessage()
+                'message' => 'Failed to upload group image'
             ], 500);
         }
     }
