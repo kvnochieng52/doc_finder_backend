@@ -19,18 +19,10 @@ return new class extends Migration
             $table->string('group_tags')->nullable();
             $table->enum('group_privacy', ['public', 'private', 'closed'])->default('public');
             $table->boolean('require_approval')->default(false);
-            $table->string('group_image')->nullable();
-            $table->string('cover_image')->nullable();
+            $table->text('group_image')->nullable();
+            $table->text('cover_image')->nullable();
             $table->unsignedBigInteger('created_by');
-            $table->timestamps();
-
-            // Foreign key constraint for created_by
-            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-
-            // Indexes
-            $table->index(['created_by']);
-            $table->index(['group_privacy']);
-            $table->index(['created_at']);
+            $table->unsignedBigInteger('updated_by')->nullable();
         });
     }
 
