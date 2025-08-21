@@ -21,8 +21,9 @@ return new class extends Migration
             $table->boolean('require_approval')->default(false);
             $table->text('group_image')->nullable();
             $table->text('cover_image')->nullable();
-            $table->unsignedBigInteger('created_by');
-            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->bigInteger('created_by')->nullable();
+            $table->bigInteger('updated_by')->nullable();
+            $table->timestamps();
         });
     }
 
