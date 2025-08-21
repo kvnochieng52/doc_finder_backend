@@ -156,77 +156,77 @@ class GroupController extends Controller
     /**
      * Create a new group with categories
      */
-    // public function createGroup(Request $request): JsonResponse
-    // {
-    //     $request->validate([
-    //         'group_name' => 'required|string|max:255',
-    //         'group_description' => 'required|string',
-    //         'group_location' => 'required|string|max:255',
-    //         'group_tags' => 'nullable|string|max:500',
-    //         'group_privacy' => ['required', Rule::in(['public', 'private', 'closed'])],
-    //         'require_approval' => 'boolean',
-    //         'category_id' => 'required|integer|exists:group_categories,id',
-    //         'subcategory_ids' => 'required|array|min:1',
-    //         'subcategory_ids.*' => 'integer|exists:group_sub_categories,id',
-    //     ]);
+    public function createGroup(Request $request): JsonResponse
+    {
+        $request->validate([
+            'group_name' => 'required|string|max:255',
+            'group_description' => 'required|string',
+            'group_location' => 'required|string|max:255',
+            'group_tags' => 'nullable|string|max:500',
+            'group_privacy' => ['required', Rule::in(['public', 'private', 'closed'])],
+            'require_approval' => 'boolean',
+            'category_id' => 'required|integer|exists:group_categories,id',
+            'subcategory_ids' => 'required|array|min:1',
+            'subcategory_ids.*' => 'integer|exists:group_sub_categories,id',
+        ]);
 
-    //     try {
-    //         DB::beginTransaction();
+        try {
+            DB::beginTransaction();
 
-    //         // Verify that all subcategories belong to the selected category
-    //         $validSubcategoryIds = GroupSubCategory::where('category_id', $request->category_id)
-    //             ->whereIn('id', $request->subcategory_ids)
-    //             ->pluck('id')
-    //             ->toArray();
+            // Verify that all subcategories belong to the selected category
+            $validSubcategoryIds = GroupSubCategory::where('category_id', $request->category_id)
+                ->whereIn('id', $request->subcategory_ids)
+                ->pluck('id')
+                ->toArray();
 
-    //         if (count($validSubcategoryIds) !== count($request->subcategory_ids)) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Some subcategories do not belong to the selected category'
-    //             ], 422);
-    //         }
+            if (count($validSubcategoryIds) !== count($request->subcategory_ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Some subcategories do not belong to the selected category'
+                ], 422);
+            }
 
-    //         // Create the group
-    //         $group = Group::create([
-    //             'group_name' => $request->group_name,
-    //             'group_description' => $request->group_description,
-    //             'group_location' => $request->group_location,
-    //             'group_tags' => $request->group_tags,
-    //             'group_privacy' => $request->group_privacy,
-    //             'require_approval' => $request->boolean('require_approval'),
-    //             'created_by' => Auth::id(),
-    //         ]);
+            // Create the group
+            $group = Group::create([
+                'group_name' => $request->group_name,
+                'group_description' => $request->group_description,
+                'group_location' => $request->group_location,
+                'group_tags' => $request->group_tags,
+                'group_privacy' => $request->group_privacy,
+                'require_approval' => $request->boolean('require_approval'),
+                'created_by' => Auth::id(),
+            ]);
 
-    //         // Save category mapping
-    //         GroupCategoryMapping::create([
-    //             'group_id' => $group->id,
-    //             'category_id' => $request->category_id,
-    //         ]);
+            // Save category mapping
+            GroupCategoryMapping::create([
+                'group_id' => $group->id,
+                'category_id' => $request->category_id,
+            ]);
 
-    //         // Save subcategory mappings
-    //         foreach ($request->subcategory_ids as $subcategoryId) {
-    //             GroupSubcategoryMapping::create([
-    //                 'group_id' => $group->id,
-    //                 'subcategory_id' => $subcategoryId,
-    //             ]);
-    //         }
+            // Save subcategory mappings
+            foreach ($request->subcategory_ids as $subcategoryId) {
+                GroupSubcategoryMapping::create([
+                    'group_id' => $group->id,
+                    'subcategory_id' => $subcategoryId,
+                ]);
+            }
 
-    //         DB::commit();
+            DB::commit();
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'group' => $group,
-    //             'message' => 'Group created successfully'
-    //         ], 201);
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to create group',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'success' => true,
+                'group' => $group,
+                'message' => 'Group created successfully'
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create group',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Create a new group (keeping old method name for backward compatibility)
