@@ -464,46 +464,46 @@ class GroupController extends Controller
     // /**
     //  * Upload group image
     //  */
-    // public function uploadGroupImage(Request $request): JsonResponse
-    // {
-    //     $request->validate([
-    //         'group_id' => 'required|integer|exists:groups,id',
-    //         'group_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-    //     ]);
+    public function uploadGroupImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'group_id' => 'required|integer|exists:groups,id',
+            'group_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
 
-    //     try {
-    //         $group = Group::find($request->group_id);
+        try {
+            $group = Group::find($request->group_id);
 
-    //         if ($group->created_by !== Auth::id()) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Unauthorized to modify this group'
-    //             ], 403);
-    //         }
+            if ($group->created_by !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to modify this group'
+                ], 403);
+            }
 
-    //         // Delete old image if exists
-    //         if ($group->group_image) {
-    //             Storage::disk('public')->delete($group->group_image);
-    //         }
+            // Delete old image if exists
+            if ($group->group_image) {
+                Storage::disk('public')->delete($group->group_image);
+            }
 
-    //         // Upload new image
-    //         $imagePath = $request->file('group_image')->store('group-images', 'public');
+            // Upload new image
+            $imagePath = $request->file('group_image')->store('group-images', 'public');
 
-    //         $group->update(['group_image' => $imagePath]);
+            $group->update(['group_image' => $imagePath]);
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'image_path' => $imagePath,
-    //             'message' => 'Group image uploaded successfully'
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to upload group image',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+            return response()->json([
+                'success' => true,
+                'image_path' => $imagePath,
+                'message' => 'Group image uploaded successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload group image',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Upload group cover image
