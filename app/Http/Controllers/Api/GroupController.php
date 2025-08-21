@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -158,76 +159,192 @@ class GroupController extends Controller
      */
     public function createGroup(Request $request): JsonResponse
     {
-        $request->validate([
-            'group_name' => 'required|string|max:255',
-            'group_description' => 'required|string',
-            'group_location' => 'required|string|max:255',
-            'group_tags' => 'nullable|string|max:500',
-            'group_privacy' => ['required', Rule::in(['public', 'private', 'closed'])],
-            'require_approval' => 'boolean',
-            'category_id' => 'required|integer|exists:group_categories,id',
-            'subcategory_ids' => 'required|array|min:1',
-            'subcategory_ids.*' => 'integer|exists:group_sub_categories,id',
+        // Log the incoming request
+        Log::info('Group creation attempt', [
+            'user_id' => Auth::id(),
+            'request_data' => $request->except(['group_image', 'cover_image']), // Exclude file data
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
         ]);
 
         try {
+            $validatedData = $request->validate([
+                'group_name' => 'required|string|max:255',
+                'group_description' => 'required|string',
+                'group_location' => 'required|string|max:255',
+                'group_tags' => 'nullable|string|max:500',
+                'group_privacy' => ['required', Rule::in(['public', 'private', 'closed'])],
+                'require_approval' => 'boolean',
+                'category_id' => 'required|integer|exists:group_categories,id',
+                'subcategory_ids' => 'required|array|min:1',
+                'subcategory_ids.*' => 'integer|exists:group_sub_categories,id',
+            ]);
+
+            Log::info('Group creation validation passed', [
+                'user_id' => Auth::id(),
+                'group_name' => $validatedData['group_name']
+            ]);
+
             DB::beginTransaction();
 
-            // Verify that all subcategories belong to the selected category
-            $validSubcategoryIds = GroupSubCategory::where('category_id', $request->category_id)
-                ->whereIn('id', $request->subcategory_ids)
-                ->pluck('id')
-                ->toArray();
-
-            if (count($validSubcategoryIds) !== count($request->subcategory_ids)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Some subcategories do not belong to the selected category'
-                ], 422);
-            }
-
-            // Create the group
-            $group = Group::create([
-                'group_name' => $request->group_name,
-                'group_description' => $request->group_description,
-                'group_location' => $request->group_location,
-                'group_tags' => $request->group_tags,
-                'group_privacy' => $request->group_privacy,
-                'require_approval' => $request->boolean('require_approval'),
-                'created_by' => Auth::id(),
-            ]);
-
-            // Save category mapping
-            GroupCategoryMapping::create([
-                'group_id' => $group->id,
-                'category_id' => $request->category_id,
-            ]);
-
-            // Save subcategory mappings
-            foreach ($request->subcategory_ids as $subcategoryId) {
-                GroupSubcategoryMapping::create([
-                    'group_id' => $group->id,
-                    'subcategory_id' => $subcategoryId,
+            try {
+                // Verify that all subcategories belong to the selected category
+                Log::debug('Validating subcategories belong to category', [
+                    'category_id' => $request->category_id,
+                    'subcategory_ids' => $request->subcategory_ids
                 ]);
+
+                $validSubcategoryIds = GroupSubCategory::where('category_id', $request->category_id)
+                    ->whereIn('id', $request->subcategory_ids)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (count($validSubcategoryIds) !== count($request->subcategory_ids)) {
+                    Log::warning('Subcategory validation failed', [
+                        'user_id' => Auth::id(),
+                        'category_id' => $request->category_id,
+                        'requested_subcategories' => $request->subcategory_ids,
+                        'valid_subcategories' => $validSubcategoryIds,
+                        'invalid_subcategories' => array_diff($request->subcategory_ids, $validSubcategoryIds)
+                    ]);
+
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Some subcategories do not belong to the selected category'
+                    ], 422);
+                }
+
+                Log::debug('Subcategory validation passed', [
+                    'valid_subcategories_count' => count($validSubcategoryIds)
+                ]);
+
+                // Create the group
+                Log::debug('Creating group record');
+                $group = Group::create([
+                    'group_name' => $request->group_name,
+                    'group_description' => $request->group_description,
+                    'group_location' => $request->group_location,
+                    'group_tags' => $request->group_tags,
+                    'group_privacy' => $request->group_privacy,
+                    'require_approval' => $request->boolean('require_approval'),
+                    'created_by' => Auth::id(),
+                ]);
+
+                Log::info('Group created successfully', [
+                    'group_id' => $group->id,
+                    'group_name' => $group->group_name,
+                    'created_by' => $group->created_by
+                ]);
+
+                // Save category mapping
+                Log::debug('Creating category mapping', [
+                    'group_id' => $group->id,
+                    'category_id' => $request->category_id
+                ]);
+
+                $categoryMapping = GroupCategoryMapping::create([
+                    'group_id' => $group->id,
+                    'category_id' => $request->category_id,
+                ]);
+
+                Log::debug('Category mapping created', [
+                    'mapping_id' => $categoryMapping->id
+                ]);
+
+                // Save subcategory mappings
+                Log::debug('Creating subcategory mappings', [
+                    'group_id' => $group->id,
+                    'subcategory_count' => count($request->subcategory_ids)
+                ]);
+
+                $subcategoryMappings = [];
+                foreach ($request->subcategory_ids as $subcategoryId) {
+                    $mapping = GroupSubcategoryMapping::create([
+                        'group_id' => $group->id,
+                        'subcategory_id' => $subcategoryId,
+                    ]);
+                    $subcategoryMappings[] = $mapping->id;
+                }
+
+                Log::debug('Subcategory mappings created', [
+                    'mapping_ids' => $subcategoryMappings
+                ]);
+
+                DB::commit();
+
+                Log::info('Group creation completed successfully', [
+                    'group_id' => $group->id,
+                    'user_id' => Auth::id(),
+                    'category_mapping_id' => $categoryMapping->id,
+                    'subcategory_mapping_ids' => $subcategoryMappings
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'group' => $group->fresh(), // Get fresh instance with all data
+                    'message' => 'Group created successfully'
+                ], 201);
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                Log::error('Database transaction failed during group creation', [
+                    'user_id' => Auth::id(),
+                    'error' => $e->getMessage(),
+                    'error_code' => $e->getCode(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                    'request_data' => $request->except(['group_image', 'cover_image'])
+                ]);
+
+                throw $e; // Re-throw to be caught by outer catch block
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Group creation validation failed', [
+                'user_id' => Auth::id(),
+                'validation_errors' => $e->errors(),
+                'request_data' => $request->except(['group_image', 'cover_image'])
+            ]);
 
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'group' => $group,
-                'message' => 'Group created successfully'
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create group',
-                'error' => $e->getMessage()
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Database query error during group creation', [
+                'user_id' => Auth::id(),
+                'sql_error' => $e->getMessage(),
+                'sql_code' => $e->getCode(),
+                'bindings' => $e->getBindings() ?? [],
+                'request_data' => $request->except(['group_image', 'cover_image'])
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Database error occurred. Please try again.',
+                'error_code' => 'DB_ERROR'
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during group creation', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : 'Trace hidden in production',
+                'request_data' => $request->except(['group_image', 'cover_image'])
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again.',
+                'error_code' => 'GENERAL_ERROR'
             ], 500);
         }
     }
-
     /**
      * Create a new group (keeping old method name for backward compatibility)
      */
