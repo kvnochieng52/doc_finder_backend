@@ -293,6 +293,270 @@ class GroupController extends Controller
     }
 
     /**
+     * Update an existing group with categories
+     */
+    public function updateGroup(Request $request, int $groupId): JsonResponse
+    {
+        // Log the incoming request
+        Log::info('Group update attempt', [
+            'user_id' => Auth::id(),
+            'group_id' => $groupId,
+            'request_data' => $request->except(['group_image', 'cover_image']),
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        try {
+            $group = Group::find($groupId);
+
+            if (!$group) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Group not found'
+                ], 404);
+            }
+
+            // Check if user owns the group
+            if ($group->created_by !== Auth::id()) {
+                Log::warning('Unauthorized group update attempt', [
+                    'user_id' => Auth::id(),
+                    'group_id' => $groupId,
+                    'group_owner' => $group->created_by
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to modify this group'
+                ], 403);
+            }
+
+            $validatedData = $request->validate([
+                'group_name' => 'required|string|max:255',
+                'group_description' => 'required|string',
+                'group_location' => 'required|string|max:255',
+                'group_tags' => 'nullable|string|max:500',
+                'group_privacy' => ['required', Rule::in(['public', 'private', 'closed'])],
+                'require_approval' => 'boolean',
+                'category_id' => 'required|integer|exists:group_categories,id',
+                'subcategory_ids' => 'required|array|min:1',
+                'subcategory_ids.*' => 'integer|exists:group_sub_categories,id',
+            ]);
+
+            Log::info('Group update validation passed', [
+                'user_id' => Auth::id(),
+                'group_id' => $groupId,
+                'group_name' => $validatedData['group_name']
+            ]);
+
+            DB::beginTransaction();
+
+            try {
+                // Verify that all subcategories belong to the selected category
+                $validSubcategoryIds = GroupSubCategory::where('category_id', $request->category_id)
+                    ->whereIn('id', $request->subcategory_ids)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (count($validSubcategoryIds) !== count($request->subcategory_ids)) {
+                    Log::warning('Subcategory validation failed during update', [
+                        'user_id' => Auth::id(),
+                        'group_id' => $groupId,
+                        'category_id' => $request->category_id,
+                        'requested_subcategories' => $request->subcategory_ids,
+                        'valid_subcategories' => $validSubcategoryIds
+                    ]);
+
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Some subcategories do not belong to the selected category'
+                    ], 422);
+                }
+
+                // Update the group
+                $group->update([
+                    'group_name' => $request->group_name,
+                    'group_description' => $request->group_description,
+                    'group_location' => $request->group_location,
+                    'group_tags' => $request->group_tags,
+                    'group_privacy' => $request->group_privacy,
+                    'require_approval' => $request->boolean('require_approval'),
+                ]);
+
+                Log::info('Group basic info updated', [
+                    'group_id' => $group->id,
+                    'group_name' => $group->group_name
+                ]);
+
+                // Update category mapping - delete old and create new
+                GroupCategoryMapping::where('group_id', $groupId)->delete();
+                $categoryMapping = GroupCategoryMapping::create([
+                    'group_id' => $groupId,
+                    'category_id' => $request->category_id,
+                ]);
+
+                Log::debug('Category mapping updated', [
+                    'group_id' => $groupId,
+                    'new_category_id' => $request->category_id
+                ]);
+
+                // Update subcategory mappings - delete old and create new
+                GroupSubcategoryMapping::where('group_id', $groupId)->delete();
+                $subcategoryMappings = [];
+                foreach ($request->subcategory_ids as $subcategoryId) {
+                    $mapping = GroupSubcategoryMapping::create([
+                        'group_id' => $groupId,
+                        'subcategory_id' => $subcategoryId,
+                    ]);
+                    $subcategoryMappings[] = $mapping->id;
+                }
+
+                Log::debug('Subcategory mappings updated', [
+                    'group_id' => $groupId,
+                    'subcategory_count' => count($subcategoryMappings)
+                ]);
+
+                DB::commit();
+
+                Log::info('Group update completed successfully', [
+                    'group_id' => $groupId,
+                    'user_id' => Auth::id()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'group' => $group->fresh(),
+                    'message' => 'Group updated successfully'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Database transaction failed during group update', [
+                    'user_id' => Auth::id(),
+                    'group_id' => $groupId,
+                    'error' => $e->getMessage()
+                ]);
+                throw $e;
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Group update validation failed', [
+                'user_id' => Auth::id(),
+                'group_id' => $groupId,
+                'validation_errors' => $e->errors()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Unexpected error during group update', [
+                'user_id' => Auth::id(),
+                'group_id' => $groupId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get single group details with categories and subcategories
+     */
+    public function getGroup(int $groupId): JsonResponse
+    {
+        try {
+            $group = Group::find($groupId);
+
+            if (!$group) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Group not found'
+                ], 404);
+            }
+
+            // Check if user can access this group (owner or public group)
+            if ($group->group_privacy === 'closed' && $group->created_by !== Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied to this group'
+                ], 403);
+            }
+
+            // Get category mapping
+            $categoryMapping = GroupCategoryMapping::where('group_id', $groupId)->first();
+            $category = null;
+            if ($categoryMapping) {
+                $categoryData = GroupCategory::find($categoryMapping->category_id);
+                if ($categoryData) {
+                    $category = [
+                        'id' => $categoryData->id,
+                        'name' => $categoryData->name,
+                        'description' => $categoryData->description,
+                        'slug' => $categoryData->slug
+                    ];
+                }
+            }
+
+            // Get subcategory mappings
+            $subcategoryMappings = GroupSubcategoryMapping::where('group_id', $groupId)->get();
+            $subcategories = [];
+            foreach ($subcategoryMappings as $mapping) {
+                $subcategory = GroupSubCategory::find($mapping->subcategory_id);
+                if ($subcategory) {
+                    $subcategories[] = [
+                        'id' => $subcategory->id,
+                        'name' => $subcategory->name,
+                        'description' => $subcategory->description,
+                        'slug' => $subcategory->slug
+                    ];
+                }
+            }
+
+            // Prepare group data
+            $groupData = $group->toArray();
+            $groupData['category_id'] = $categoryMapping ? $categoryMapping->category_id : null;
+            $groupData['category'] = $category;
+            $groupData['subcategories'] = $subcategories;
+
+            // Add full image URLs
+            if ($group->group_image) {
+                $groupData['group_image'] = Storage::disk('public')->url($group->group_image);
+            }
+            if ($group->cover_image) {
+                $groupData['cover_image'] = Storage::disk('public')->url($group->cover_image);
+            }
+
+            Log::info('Group details retrieved', [
+                'group_id' => $groupId,
+                'user_id' => Auth::id(),
+                'has_category' => $category !== null,
+                'subcategories_count' => count($subcategories)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'group' => $groupData,
+                'message' => 'Group details retrieved successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve group details', [
+                'group_id' => $groupId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve group details'
+            ], 500);
+        }
+    }
+
+    /**
      * Upload group image
      */
     public function uploadGroupImage(Request $request): JsonResponse
@@ -459,88 +723,11 @@ class GroupController extends Controller
     }
 
     /**
-     * Get group details with categories
+     * Get group details with categories - Legacy method name
      */
     public function getGroupDetails(int $groupId): JsonResponse
     {
-        try {
-            $group = Group::find($groupId);
-
-            if (!$group) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Group not found'
-                ], 404);
-            }
-
-            // Get categories manually without relationships
-            $categoryMappings = GroupCategoryMapping::where('group_id', $groupId)->get();
-            $subcategoryMappings = GroupSubcategoryMapping::where('group_id', $groupId)->get();
-
-            $categories = [];
-            foreach ($categoryMappings as $mapping) {
-                $category = GroupCategory::find($mapping->category_id);
-                if ($category) {
-                    $categories[] = [
-                        'id' => $category->id,
-                        'name' => $category->name,
-                        'description' => $category->description,
-                        'slug' => $category->slug
-                    ];
-                }
-            }
-
-            $subcategories = [];
-            foreach ($subcategoryMappings as $mapping) {
-                $subcategory = GroupSubCategory::find($mapping->subcategory_id);
-                if ($subcategory) {
-                    $subcategories[] = [
-                        'id' => $subcategory->id,
-                        'name' => $subcategory->name,
-                        'description' => $subcategory->description,
-                        'slug' => $subcategory->slug
-                    ];
-                }
-            }
-
-            // Add categories and subcategories to group data
-            $groupData = $group->toArray();
-            $groupData['categories'] = $categories;
-            $groupData['subcategories'] = $subcategories;
-
-            // Add full image URLs if images exist
-            if ($group->group_image) {
-                $groupData['group_image_url'] = Storage::disk('public')->url($group->group_image);
-            }
-            if ($group->cover_image) {
-                $groupData['cover_image_url'] = Storage::disk('public')->url($group->cover_image);
-            }
-
-            Log::info('Group details retrieved', [
-                'group_id' => $groupId,
-                'user_id' => Auth::id(),
-                'categories_count' => count($categories),
-                'subcategories_count' => count($subcategories)
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $groupData,
-                'message' => 'Group details retrieved successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve group details', [
-                'group_id' => $groupId,
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve group details',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return $this->getGroup($groupId);
     }
 
     /**
