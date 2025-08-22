@@ -84,5 +84,35 @@ Route::middleware(['api'])->group(function () {
         Route::get('/categories/{categoryId}/subcategories', [GroupController::class, 'getCategorySubcategories']);
         Route::post('/groups/save', [GroupController::class, 'saveGroup']);
         Route::post('/groups/categories', [GroupController::class, 'saveGroupCategories']);
+
+        // Just for testing
+
+        Route::delete('/groups/{groupId}', [GroupController::class, 'deleteGroup']);
+
+        // Image upload endpoints
+        Route::post('/upload-group-image', [GroupController::class, 'uploadGroupImage']);
+        Route::post('/upload-group-cover-image', [GroupController::class, 'uploadGroupCoverImage']);
+
+        // =============================================================================
+        // LEGACY ROUTES (For backward compatibility)
+        // =============================================================================
+
+        // Legacy category routes
+        Route::get('/active-categories', [GroupController::class, 'getActiveCategories']);
+        Route::get('/categories/{categoryId}/subcategories', [GroupController::class, 'getCategorySubcategories']);
+
+        // Legacy group creation (without categories)
+        Route::post('/groups/save', [GroupController::class, 'saveGroup']);
+
+        // Note: saveGroupCategories method was commented out in original controller
+        // Route::post('/groups/categories', [GroupController::class, 'saveGroupCategories']);
     });
+
+    // =============================================================================
+    // PUBLIC ROUTES (if needed for browsing groups)
+    // =============================================================================
+
+    // Public routes for browsing groups (optional)
+    Route::get('/public-groups', [GroupController::class, 'getPublicGroups']);
+    Route::get('/public-groups/{groupId}', [GroupController::class, 'getPublicGroupDetails']);
 });
