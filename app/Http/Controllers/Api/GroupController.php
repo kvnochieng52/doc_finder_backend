@@ -736,18 +736,15 @@ class GroupController extends Controller
     public function getUserGroups(Request $request): JsonResponse
     {
         try {
-            $perPage = $request->get('per_page', 10);
-            $page = $request->get('page', 1);
-
             $groups = Group::where('created_by', Auth::id())
                 ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
+                ->get();
 
-            // Add image URLs and category info to each group
-            $groups->getCollection()->transform(function ($group) {
+            // Transform groups to add image URLs
+            $groupsData = $groups->map(function ($group) {
                 $groupData = $group->toArray();
 
-                // Add full image URLs
+                // Add full image URLs if images exist
                 if ($group->group_image) {
                     $groupData['group_image_url'] = Storage::disk('public')->url($group->group_image);
                 }
@@ -755,44 +752,24 @@ class GroupController extends Controller
                     $groupData['cover_image_url'] = Storage::disk('public')->url($group->cover_image);
                 }
 
-                // Get categories for this group
-                $categoryMappings = GroupCategoryMapping::where('group_id', $group->id)->get();
-                $categories = [];
-                foreach ($categoryMappings as $mapping) {
-                    $category = GroupCategory::find($mapping->category_id);
-                    if ($category) {
-                        $categories[] = [
-                            'id' => $category->id,
-                            'name' => $category->name
-                        ];
-                    }
-                }
-                $groupData['categories'] = $categories;
-
                 return $groupData;
             });
 
             return response()->json([
                 'success' => true,
-                'data' => $groups->items(),
-                'pagination' => [
-                    'current_page' => $groups->currentPage(),
-                    'last_page' => $groups->lastPage(),
-                    'per_page' => $groups->perPage(),
-                    'total' => $groups->total(),
-                    'has_more' => $groups->hasMorePages()
-                ],
+                'data' => $groupsData,
                 'message' => 'User groups retrieved successfully'
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to retrieve user groups', [
                 'user_id' => Auth::id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to retrieve user groups'
+                'message' => 'Failed to retrieve user groups: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -71,6 +71,7 @@ Route::middleware(['api'])->group(function () {
 
         // Create group with categories in one call
         Route::post('/groups', [GroupController::class, 'createGroup']);
+        Route::get('/groups', [GroupController::class, 'getUserGroups']);
 
         // Image uploads
         Route::post('/upload-group-image', [GroupController::class, 'uploadGroupImage']);
@@ -106,6 +107,8 @@ Route::middleware(['api'])->group(function () {
 
         // Note: saveGroupCategories method was commented out in original controller
         // Route::post('/groups/categories', [GroupController::class, 'saveGroupCategories']);
+        Route::get('/groups/{groupId}', [GroupController::class, 'getGroup']);
+        Route::put('/groups/{groupId}', [GroupController::class, 'updateGroup']);
     });
 
     // =============================================================================
