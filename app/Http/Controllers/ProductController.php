@@ -23,6 +23,7 @@ class ProductController extends Controller
                 'product_name' => 'required|string|max:255',
                 'product_description' => 'required|string',
                 'product_location' => 'required|string|max:255',
+                'product_price' => 'required|numeric|min:0|max:99999999.99',
                 'product_tags' => 'nullable|string|max:500',
             ]);
 
@@ -32,6 +33,7 @@ class ProductController extends Controller
                 'product_name' => $validatedData['product_name'],
                 'product_description' => $validatedData['product_description'],
                 'product_location' => $validatedData['product_location'],
+                'product_price' => $validatedData['product_price'],
                 'product_tags' => $validatedData['product_tags'],
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
@@ -53,6 +55,7 @@ class ProductController extends Controller
                     'product_name' => $product->product_name,
                     'product_description' => $product->product_description,
                     'product_location' => $product->product_location,
+                    'product_price' => $product->product_price,
                     'product_tags' => $product->product_tags,
                     'created_at' => $product->created_at,
                 ]
@@ -211,6 +214,7 @@ class ProductController extends Controller
                     'product_name' => $product->product_name,
                     'product_description' => $product->product_description,
                     'product_location' => $product->product_location,
+                    'product_price' => $product->product_price,
                     'product_tags' => $product->product_tags,
                     'product_featured_image' => $product->product_featured_image
                         ? Storage::disk('public')->url($product->product_featured_image)
@@ -276,6 +280,7 @@ class ProductController extends Controller
                     'product_name' => $product->product_name,
                     'product_description' => $product->product_description,
                     'product_location' => $product->product_location,
+                    'product_price' => $product->product_price,
                     'product_tags' => $product->product_tags,
                     'product_featured_image' => $product->product_featured_image
                         ? Storage::disk('public')->url($product->product_featured_image)
@@ -341,6 +346,7 @@ class ProductController extends Controller
                 'product_name' => $product->product_name,
                 'product_description' => $product->product_description,
                 'product_location' => $product->product_location,
+                'product_price' => $product->product_price,
                 'product_tags' => $product->product_tags,
                 'product_featured_image' => $product->product_featured_image
                     ? Storage::disk('public')->url($product->product_featured_image)
@@ -403,6 +409,7 @@ class ProductController extends Controller
                 'product_name' => 'sometimes|required|string|max:255',
                 'product_description' => 'sometimes|required|string',
                 'product_location' => 'sometimes|required|string|max:255',
+                'product_price' => 'sometimes|required|numeric|min:0|max:99999999.99',
                 'product_tags' => 'nullable|string|max:500',
             ]);
 
@@ -424,6 +431,7 @@ class ProductController extends Controller
                     'product_name' => $product->product_name,
                     'product_description' => $product->product_description,
                     'product_location' => $product->product_location,
+                    'product_price' => $product->product_price,
                     'product_tags' => $product->product_tags,
                     'updated_at' => $product->updated_at,
                 ]

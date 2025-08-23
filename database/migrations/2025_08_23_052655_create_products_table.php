@@ -16,11 +16,17 @@ return new class extends Migration
             $table->string('product_name');
             $table->text('product_description');
             $table->string('product_location');
+            $table->decimal('product_price', 10, 2); // 10 digits total, 2 decimal places
             $table->string('product_tags', 500)->nullable();
             $table->text('product_featured_image')->nullable();
             $table->bigInteger('created_by')->nullable();
             $table->bigInteger('updated_by')->nullable();
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index('created_by');
+            $table->index('created_at');
+            $table->index('product_price');
         });
     }
 

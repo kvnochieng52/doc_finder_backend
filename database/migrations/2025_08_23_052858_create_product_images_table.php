@@ -19,6 +19,14 @@ return new class extends Migration
             $table->bigInteger('created_by')->nullable();
             $table->bigInteger('updated_by')->nullable();
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index('product_id');
+            $table->index(['product_id', 'is_featured']);
+            $table->index('created_by');
+
+            // Add foreign key constraint if you want referential integrity
+            // $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 
