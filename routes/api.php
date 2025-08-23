@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\FacilityController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SpecializationController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ServiceProviderController;
 
 /*
@@ -109,6 +110,29 @@ Route::middleware(['api'])->group(function () {
         // Route::post('/groups/categories', [GroupController::class, 'saveGroupCategories']);
         Route::get('/groups/{groupId}', [GroupController::class, 'getGroup']);
         Route::put('/groups/{groupId}', [GroupController::class, 'updateGroup']);
+
+
+
+
+
+        // Create new product
+        Route::post('/products', [ProductController::class, 'store']);
+
+        // Upload product images (multiple images support)
+        Route::post('/upload-product-images', [ProductController::class, 'uploadProductImages']);
+
+        // Get user's products
+        Route::get('/my-products', [ProductController::class, 'userProducts']);
+
+        // Update specific product
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::patch('/products/{id}', [ProductController::class, 'update']);
+
+        // Delete specific product
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+        // Delete specific product image
+        Route::delete('/product-images/{imageId}', [ProductController::class, 'deleteProductImage']);
     });
 
     // =============================================================================
