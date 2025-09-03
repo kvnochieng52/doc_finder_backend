@@ -11,19 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('groups', function (Blueprint $table) {
-            $table->id();
-            $table->string('group_name');
-            $table->text('group_description');
-            $table->string('group_location');
-            $table->string('group_tags')->nullable();
-            $table->enum('group_privacy', ['public', 'private', 'closed'])->default('public');
-            $table->boolean('require_approval')->default(false);
-            $table->text('group_image')->nullable();
-            $table->text('cover_image')->nullable();
-            $table->bigInteger('created_by')->nullable();
-            $table->bigInteger('updated_by')->nullable();
-            $table->timestamps();
+        Schema::table('groups', function (Blueprint $table) {
+            // $table->id();
+            $table->string('group_name')->after('id');
+            $table->text('group_description')->after('group_name');
+            $table->string('group_location')->after('group_description');
+            $table->string('group_tags')->nullable()->after('group_location');
+            $table->enum('group_privacy', ['public', 'private', 'closed'])->default('public')->after('group_tags');
+            $table->boolean('require_approval')->default(false)->after('group_privacy');
+            $table->text('group_image')->nullable()->after('require_approval');
+            $table->text('cover_image')->nullable()->after('group_image');
+            $table->bigInteger('created_by')->nullable()->after('cover_image');
+            $table->bigInteger('updated_by')->nullable()->after('created_by');
+            // $table->timestamps();
         });
     }
 
@@ -32,6 +32,19 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('groups');
+        Schema::table('groups', function (Blueprint $table) {
+            $table->dropColumn([
+                'group_name',
+                'group_description',
+                'group_location',
+                'group_tags',
+                'group_privacy',
+                'require_approval',
+                'group_image',
+                'cover_image',
+                'created_by',
+                'updated_by',
+            ]);
+        });
     }
 };
