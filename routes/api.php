@@ -134,6 +134,13 @@ Route::middleware(['api'])->group(function () {
 
         // Delete specific product image
         Route::delete('/product-images/{imageId}', [ProductController::class, 'deleteProductImage']);
+
+        // Blog management routes (authenticated)
+        Route::post('/blogs', [BlogController::class, 'store']);
+        Route::put('/blogs/{id}', [BlogController::class, 'update']);
+        Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
+        Route::post('/upload-blog-image', [BlogController::class, 'uploadFeaturedImage']);
+        Route::get('/my-blogs', [BlogController::class, 'getUserBlogs']);
     });
 
     // =============================================================================

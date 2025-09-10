@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Blog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class BlogController extends Controller
 {
@@ -152,6 +154,187 @@ class BlogController extends Controller
         return response()->json([
             'success' => true,
             'data' => $tags
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'excerpt' => 'required|string|max:500',
+            'content' => 'required|string',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
+            'status' => 'required|in:draft,published',
+            'is_featured' => 'boolean',
+            'is_trending' => 'boolean',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $blogData = $request->except('featured_image');
+        $blogData['author_name'] = auth()->user()->name ?? 'Anonymous';
+        
+        if ($request->get('status') === 'published') {
+            $blogData['published_at'] = now();
+        }
+
+        if ($request->hasFile('featured_image')) {
+            $imagePath = $request->file('featured_image')->store('blog_images', 'public');
+            $blogData['featured_image'] = Storage::url($imagePath);
+        }
+
+        $blog = Blog::create($blogData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Blog created successfully',
+            'data' => $blog
+        ], 201);
+    }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $blog = Blog::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|required|string|max:255',
+            'excerpt' => 'sometimes|required|string|max:500',
+            'content' => 'sometimes|required|string',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
+            'status' => 'sometimes|required|in:draft,published',
+            'is_featured' => 'boolean',
+            'is_trending' => 'boolean',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $blogData = $request->except('featured_image');
+
+        if ($request->get('status') === 'published' && $blog->status !== 'published') {
+            $blogData['published_at'] = now();
+        }
+
+        if ($request->hasFile('featured_image')) {
+            if ($blog->featured_image) {
+                $oldImagePath = str_replace('/storage/', '', $blog->featured_image);
+                Storage::disk('public')->delete($oldImagePath);
+            }
+            
+            $imagePath = $request->file('featured_image')->store('blog_images', 'public');
+            $blogData['featured_image'] = Storage::url($imagePath);
+        }
+
+        $blog->update($blogData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Blog updated successfully',
+            'data' => $blog
+        ]);
+    }
+
+    public function destroy($id): JsonResponse
+    {
+        $blog = Blog::findOrFail($id);
+
+        if ($blog->featured_image) {
+            $imagePath = str_replace('/storage/', '', $blog->featured_image);
+            Storage::disk('public')->delete($imagePath);
+        }
+
+        $blog->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Blog deleted successfully'
+        ]);
+    }
+
+    public function uploadFeaturedImage(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'blog_id' => 'nullable|exists:blogs,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $imagePath = $request->file('image')->store('blog_images', 'public');
+        $imageUrl = Storage::url($imagePath);
+
+        if ($request->blog_id) {
+            $blog = Blog::find($request->blog_id);
+            if ($blog && $blog->featured_image) {
+                $oldImagePath = str_replace('/storage/', '', $blog->featured_image);
+                Storage::disk('public')->delete($oldImagePath);
+            }
+            
+            if ($blog) {
+                $blog->update(['featured_image' => $imageUrl]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image uploaded successfully',
+            'data' => [
+                'image_url' => $imageUrl,
+                'image_path' => $imagePath
+            ]
+        ]);
+    }
+
+    public function getUserBlogs(Request $request): JsonResponse
+    {
+        $query = Blog::where('author_name', auth()->user()->name)
+            ->latest('created_at');
+
+        if ($request->has('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('excerpt', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $blogs = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $blogs->items(),
+            'pagination' => [
+                'current_page' => $blogs->currentPage(),
+                'last_page' => $blogs->lastPage(),
+                'per_page' => $blogs->perPage(),
+                'total' => $blogs->total()
+            ]
         ]);
     }
 }
