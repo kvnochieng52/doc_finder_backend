@@ -159,17 +159,38 @@ class BlogController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // Handle tags sent as individual fields (tags[0], tags[1], etc.)
+        $tags = [];
+        foreach ($request->all() as $key => $value) {
+            if (preg_match('/^tags\[(\d+)\]$/', $key)) {
+                $tags[] = $value;
+            }
+        }
+        
+        // Convert string booleans to actual booleans
+        $isFeatured = filter_var($request->get('is_featured', false), FILTER_VALIDATE_BOOLEAN);
+        $isTrending = filter_var($request->get('is_trending', false), FILTER_VALIDATE_BOOLEAN);
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
             'status' => 'required|in:draft,published',
-            'is_featured' => 'boolean',
-            'is_trending' => 'boolean',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
         ]);
+
+        // Validate tags separately if they exist
+        if (!empty($tags)) {
+            foreach ($tags as $tag) {
+                if (!is_string($tag) || strlen($tag) > 50) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validation failed',
+                        'errors' => ['tags' => ['Each tag must be a string with maximum 50 characters']]
+                    ], 422);
+                }
+            }
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -179,8 +200,11 @@ class BlogController extends Controller
             ], 422);
         }
 
-        $blogData = $request->except('featured_image');
+        $blogData = $request->except(['featured_image']);
         $blogData['author_name'] = auth()->user()->name ?? 'Anonymous';
+        $blogData['tags'] = !empty($tags) ? $tags : null;
+        $blogData['is_featured'] = $isFeatured;
+        $blogData['is_trending'] = $isTrending;
         
         if ($request->get('status') === 'published') {
             $blogData['published_at'] = now();
@@ -204,17 +228,34 @@ class BlogController extends Controller
     {
         $blog = Blog::findOrFail($id);
 
+        // Handle tags sent as individual fields (tags[0], tags[1], etc.)
+        $tags = [];
+        foreach ($request->all() as $key => $value) {
+            if (preg_match('/^tags\[(\d+)\]$/', $key)) {
+                $tags[] = $value;
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'excerpt' => 'sometimes|required|string|max:500',
             'content' => 'sometimes|required|string',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
             'status' => 'sometimes|required|in:draft,published',
-            'is_featured' => 'boolean',
-            'is_trending' => 'boolean',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
         ]);
+
+        // Validate tags separately if they exist
+        if (!empty($tags)) {
+            foreach ($tags as $tag) {
+                if (!is_string($tag) || strlen($tag) > 50) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validation failed',
+                        'errors' => ['tags' => ['Each tag must be a string with maximum 50 characters']]
+                    ], 422);
+                }
+            }
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -224,7 +265,20 @@ class BlogController extends Controller
             ], 422);
         }
 
-        $blogData = $request->except('featured_image');
+        $blogData = $request->except(['featured_image', '_method']);
+        
+        // Handle boolean conversions
+        if ($request->has('is_featured')) {
+            $blogData['is_featured'] = filter_var($request->get('is_featured'), FILTER_VALIDATE_BOOLEAN);
+        }
+        if ($request->has('is_trending')) {
+            $blogData['is_trending'] = filter_var($request->get('is_trending'), FILTER_VALIDATE_BOOLEAN);
+        }
+        
+        // Handle tags
+        if (!empty($tags)) {
+            $blogData['tags'] = $tags;
+        }
 
         if ($request->get('status') === 'published' && $blog->status !== 'published') {
             $blogData['published_at'] = now();
