@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\FacilityController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\ProfileController;
@@ -142,4 +143,12 @@ Route::middleware(['api'])->group(function () {
     // Public routes for browsing groups (optional)
     Route::get('/public-groups', [GroupController::class, 'getPublicGroups']);
     Route::get('/public-groups/{groupId}', [GroupController::class, 'getPublicGroupDetails']);
+    
+    // Blog routes (public access)
+    Route::get('/blogs', [BlogController::class, 'index']);
+    Route::get('/blogs/trending', [BlogController::class, 'trending']);
+    Route::get('/blogs/featured', [BlogController::class, 'featured']);
+    Route::get('/blogs/latest-trends', [BlogController::class, 'latestTrends']);
+    Route::get('/blogs/tags', [BlogController::class, 'tags']);
+    Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 });

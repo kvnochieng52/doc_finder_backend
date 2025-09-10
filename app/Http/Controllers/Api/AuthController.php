@@ -104,7 +104,20 @@ class AuthController extends Controller
 
     public function VerifyEmail(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'verification_code' => 'required|string'
+        ]);
+
         $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => "User not found"
+            ], 404);
+        }
+
         if ($user->verification_code == $request->verification_code) {
             $user->is_active = 1;
             $user->save();
@@ -124,14 +137,17 @@ class AuthController extends Controller
 
     public function sendResetCode(Request $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $request->validate([
+            'email' => 'required|email'
+        ]);
 
+        $user = User::where('email', $request->email)->first();
 
         if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => "User with this email does not exist"
-            ], 401);
+            ], 404);
         }
 
         $randomNumber = rand(1000, 9999);
@@ -152,7 +168,10 @@ class AuthController extends Controller
             );
         } catch (\Exception $e) {
             Log::error("Failed to send email: " . $e->getMessage());
-            // $this->fail($e);
+            return response()->json([
+                'success' => false,
+                'message' => "Failed to send reset code email"
+            ], 500);
         }
 
         return response()->json([
@@ -164,7 +183,19 @@ class AuthController extends Controller
 
     public function verifyResetCode(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string'
+        ]);
+
         $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => "User not found"
+            ], 404);
+        }
 
         if ($user->verification_code == $request->code) {
             return response()->json([
@@ -182,9 +213,33 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string|min:6|confirmed',
+            'code' => 'required|string'
+        ]);
+
         $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => "User not found"
+            ], 404);
+        }
+
+        // Verify the reset code before allowing password reset
+        if ($user->verification_code != $request->code) {
+            return response()->json([
+                'success' => false,
+                'message' => "Invalid verification code"
+            ], 401);
+        }
+
         $user->password = Hash::make($request->password);
+        $user->verification_code = null; // Clear the verification code after use
         $user->save();
+
         return response()->json([
             'success' => true,
             'message' => "Password reset successfully"
