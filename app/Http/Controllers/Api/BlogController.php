@@ -212,7 +212,7 @@ class BlogController extends Controller
 
         if ($request->hasFile('featured_image')) {
             $imagePath = $request->file('featured_image')->store('blog_images', 'public');
-            $blogData['featured_image'] = Storage::url($imagePath);
+            $blogData['featured_image'] = $imagePath; // Store as: blog_images/filename.jpg
         }
 
         $blog = Blog::create($blogData);
@@ -286,12 +286,12 @@ class BlogController extends Controller
 
         if ($request->hasFile('featured_image')) {
             if ($blog->featured_image) {
-                $oldImagePath = str_replace('/storage/', '', $blog->featured_image);
-                Storage::disk('public')->delete($oldImagePath);
+                // Remove old image - featured_image is stored as: blog_images/filename.jpg
+                Storage::disk('public')->delete($blog->featured_image);
             }
             
             $imagePath = $request->file('featured_image')->store('blog_images', 'public');
-            $blogData['featured_image'] = Storage::url($imagePath);
+            $blogData['featured_image'] = $imagePath; // Store as: blog_images/filename.jpg
         }
 
         $blog->update($blogData);
@@ -308,8 +308,8 @@ class BlogController extends Controller
         $blog = Blog::findOrFail($id);
 
         if ($blog->featured_image) {
-            $imagePath = str_replace('/storage/', '', $blog->featured_image);
-            Storage::disk('public')->delete($imagePath);
+            // featured_image is stored as: blog_images/filename.jpg
+            Storage::disk('public')->delete($blog->featured_image);
         }
 
         $blog->delete();
@@ -336,17 +336,17 @@ class BlogController extends Controller
         }
 
         $imagePath = $request->file('image')->store('blog_images', 'public');
-        $imageUrl = Storage::url($imagePath);
+        $imageUrl = 'http://69.30.235.220:8006/storage/' . $imagePath;
 
         if ($request->blog_id) {
             $blog = Blog::find($request->blog_id);
             if ($blog && $blog->featured_image) {
-                $oldImagePath = str_replace('/storage/', '', $blog->featured_image);
-                Storage::disk('public')->delete($oldImagePath);
+                // featured_image is stored as: blog_images/filename.jpg
+                Storage::disk('public')->delete($blog->featured_image);
             }
             
             if ($blog) {
-                $blog->update(['featured_image' => $imageUrl]);
+                $blog->update(['featured_image' => $imagePath]); // Store as: blog_images/filename.jpg
             }
         }
 
