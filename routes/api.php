@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\FacilityController;
 use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\MedicineController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ShoppingCartController;
 use App\Http\Controllers\Api\SpecializationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ServiceProviderController;
@@ -141,6 +143,20 @@ Route::middleware(['api'])->group(function () {
         Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
         Route::post('/upload-blog-image', [BlogController::class, 'uploadFeaturedImage']);
         Route::get('/my-blogs', [BlogController::class, 'getUserBlogs']);
+
+        // Medicine management routes (authenticated)
+        Route::post('/medicines', [MedicineController::class, 'store']);
+        Route::put('/medicines/{id}', [MedicineController::class, 'update']);
+        Route::delete('/medicines/{id}', [MedicineController::class, 'destroy']);
+        Route::post('/upload-medicine-image', [MedicineController::class, 'uploadImage']);
+
+        // Shopping cart routes (authenticated)
+        Route::get('/cart', [ShoppingCartController::class, 'index']);
+        Route::post('/cart', [ShoppingCartController::class, 'store']);
+        Route::put('/cart/{id}', [ShoppingCartController::class, 'update']);
+        Route::delete('/cart/{id}', [ShoppingCartController::class, 'destroy']);
+        Route::delete('/cart', [ShoppingCartController::class, 'clear']);
+        Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
     });
 
     // =============================================================================
@@ -158,4 +174,10 @@ Route::middleware(['api'])->group(function () {
     Route::get('/blogs/latest-trends', [BlogController::class, 'latestTrends']);
     Route::get('/blogs/tags', [BlogController::class, 'tags']);
     Route::get('/blogs/{slug}', [BlogController::class, 'show']);
+
+    // Medicine routes (public access for pharmacy view)
+    Route::get('/medicines', [MedicineController::class, 'index']);
+    Route::get('/medicines/{id}', [MedicineController::class, 'show']);
+    Route::get('/medicine-categories', [MedicineController::class, 'getCategories']);
+    Route::get('/medicine-categories/{categoryId}/subcategories', [MedicineController::class, 'getSubcategories']);
 });
