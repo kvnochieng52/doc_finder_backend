@@ -103,9 +103,20 @@ class MedicineController extends Controller
             $data['image'] = $imagePath;
         }
 
+        // Handle conditions sent as individual fields (conditions[0], conditions[1], etc.)
+        $conditions = [];
+        foreach ($request->all() as $key => $value) {
+            if (preg_match('/^conditions\[(\d+)\]$/', $key)) {
+                $conditions[] = $value;
+            }
+        }
+        if (!empty($conditions)) {
+            $data['conditions'] = $conditions;
+        }
+
         // Convert boolean fields
         $data['requires_prescription'] = filter_var($request->get('requires_prescription', false), FILTER_VALIDATE_BOOLEAN);
-        $data['quantity_available'] = $request->get('quantity_available', 0);
+        $data['quantity_available'] = (int) $request->get('quantity_available', 0);
 
         $medicine = Medicine::create($data);
         $medicine->load(['category', 'subcategory']);
@@ -185,9 +196,20 @@ class MedicineController extends Controller
             $data['image'] = $imagePath;
         }
 
+        // Handle conditions sent as individual fields (conditions[0], conditions[1], etc.)
+        $conditions = [];
+        foreach ($request->all() as $key => $value) {
+            if (preg_match('/^conditions\[(\d+)\]$/', $key)) {
+                $conditions[] = $value;
+            }
+        }
+        if (!empty($conditions)) {
+            $data['conditions'] = $conditions;
+        }
+
         // Convert boolean fields
         $data['requires_prescription'] = filter_var($request->get('requires_prescription', false), FILTER_VALIDATE_BOOLEAN);
-        $data['quantity_available'] = $request->get('quantity_available', 0);
+        $data['quantity_available'] = (int) $request->get('quantity_available', 0);
 
         $medicine->update($data);
         $medicine->load(['category', 'subcategory']);
